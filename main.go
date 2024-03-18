@@ -22,6 +22,7 @@ func createBook(context *gin.Context) {
 
 	if err != nil {
 		fmt.Println("Failed to parse request body.", err)
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Failed to parse request body."})
 		return
 	}
 
@@ -106,13 +107,19 @@ func checkInBook(context *gin.Context) {
 	context.IndentedJSON(http.StatusOK, book)
 }
 
-func main() {
-	fmt.Println("App is running...")
-
+func BuildRouter() *gin.Engine {
 	router := gin.Default()
 	router.GET("/books", getBooks)
 	router.POST("/books", createBook)
 	router.PATCH("/books/checkout", checkOutBook)
 	router.PATCH("/books/checkin", checkInBook)
+
+	return router
+}
+
+func main() {
+	fmt.Println("App is running...")
+
+	router := BuildRouter()
 	router.Run(":8888")
 }
