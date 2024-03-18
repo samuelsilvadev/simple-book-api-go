@@ -49,6 +49,16 @@ func createBook(context *gin.Context) {
 	context.IndentedJSON(http.StatusCreated, newBook)
 }
 
+func findBookById(id int) (models.Book, int, error) {
+	for index, book := range db.Books {
+		if book.ID == id {
+			return book, index, nil
+		}
+	}
+
+	return models.Book{}, -1, errors.New("book not found")
+}
+
 func checkOutBook(context *gin.Context) {
 	id, ok := context.GetQuery("id")
 
@@ -58,18 +68,7 @@ func checkOutBook(context *gin.Context) {
 	}
 
 	parsedId, _ := strconv.Atoi(id)
-
-	findBookById := func() (models.Book, int, error) {
-		for index, book := range db.Books {
-			if book.ID == parsedId {
-				return book, index, nil
-			}
-		}
-
-		return models.Book{}, -1, errors.New("book not found")
-	}
-
-	book, bookIndex, err := findBookById()
+	book, bookIndex, err := findBookById(parsedId)
 
 	if err != nil {
 		context.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
@@ -86,6 +85,27 @@ func checkOutBook(context *gin.Context) {
 	context.IndentedJSON(http.StatusOK, book)
 }
 
+func checkInBook(context *gin.Context) {
+	id, ok := context.GetQuery("id")
+
+	if !ok {
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Missing id query parameter"})
+		return
+	}
+
+	parsedId, _ := strconv.Atoi(id)
+	book, bookIndex, err := findBookById(parsedId)
+
+	if err != nil {
+		context.IndentedJSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		return
+	}
+
+	book.Quantity = book.Quantity + 1
+	db.Books[bookIndex] = book
+	context.IndentedJSON(http.StatusOK, book)
+}
+
 func main() {
 	fmt.Println("App is running...")
 
@@ -93,5 +113,6 @@ func main() {
 	router.GET("/books", getBooks)
 	router.POST("/books", createBook)
 	router.PATCH("/books/checkout", checkOutBook)
+	router.PATCH("/books/checkin", checkInBook)
 	router.Run(":8888")
 }
