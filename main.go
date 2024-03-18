@@ -19,6 +19,7 @@ func createBook(context *gin.Context) {
 	var err = context.BindJSON(&newBook)
 
 	if err != nil {
+		fmt.Println("Failed to parse request body.", err)
 		return
 	}
 
